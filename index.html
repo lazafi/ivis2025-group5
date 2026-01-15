@@ -8,14 +8,30 @@
 </head>
 <body>
 	<div id="options">
-		<label for="var1" style="margin-left:30px">Variable 1</label>
-		<select name="var1" id="var1">
-			<option value="price" selected="">Price in EUR</option>
-			<option value="occupancy_rate">Occupancy rate (%)</option>
-			<option value="number_of_reviews">Number of reviews</option>
-			<option value="reviews_per_month">Reviews per month</option>
-			<option value="minimum_nights">Minimum nights</option>
-		</select>
+		<fieldset>
+			<legend>Select variable to color by:</legend>
+			<label for="var1" style="margin-left:30px">Variable 1</label>
+		<div>
+			<input type="radio" name="var1" id="var1" value="price" checked>
+			<label for="var1">Price in EUR</label>
+		</div>
+		<div>
+			<input type="radio" name="var1" id="var1_occupancy_rate" value="occupancy_rate">
+			<label for="var1_occupancy_rate">Occupancy rate (%)</label>
+		</div>
+		<div>
+			<input type="radio" name="var1" id="var1_number_of_reviews" value="number_of_reviews">
+			<label for="var1_number_of_reviews">Number of reviews</label>
+		</div>
+		<div>
+			<input type="radio" name="var1" id="var1_reviews_per_month" value="reviews_per_month">
+			<label for="var1_reviews_per_month">Reviews per month</label>
+		</div>
+		<div>
+			<input type="radio" name="var1" id="var1_minimum_nights" value="minimum_nights">
+			<label for="var1_minimum_nights">Minimum nights</label>
+		</div>
+		</fieldset>
 	</div>
 	<div id="map" class="responsive-svg-container"></div>
 	<div id="bar" class="responsive-svg-container"></div>

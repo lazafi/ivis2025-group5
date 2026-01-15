@@ -48,10 +48,10 @@ const createLegend = (colorScale) => {
             const legendScale = d3.scaleLinear()
                .domain(d3.extent(colorScale.quantiles()))
                .range([0, colorScale.quantiles().length * 20]);
-             console.log(colorScale.quantiles().length);
-             console.log(d3.extent(colorScale.quantiles()));
+             //console.log(colorScale.quantiles().length);
+             //console.log(d3.extent(colorScale.quantiles()));
               const legendAxis = d3.axisRight(legendScale)
-                .ticks(10)
+                .ticks(colorScale.quantiles().length)
                // .ticks(colorScale.quantiles().length)
                 //.tickValues(colorScale.quantiles())
                 //.tickSize(10)
@@ -75,19 +75,21 @@ const createLegend = (colorScale) => {
                 .text("Price (EUR)");
             };
 ////////////////////////////////
-  const drawMap = (geojson, listings, colorVar) => {
-    //console.log(listings);
-    projection.fitSize([width, height], geojson);
-    
-    // clear previous elements
+  const drawMap = (geojson, listings, level, colorVar) => {
+    //console.log(data); 
+      // clear previous elements
     d3.selectAll("#back").remove();
     d3.selectAll("circle").remove();
     mapGroup.selectAll("path").remove();
 
-    d3.select("#var1").on("change", function(e) {
-        // Update the chart
-        update();
-      });
+    projection.fitSize([width, height], geojson);
+    const showListings = listings.filter(d => d.neighbourhood === level || level === "city")
+    .map(d => {
+      const coords = projection([d.longitude, d.latitude]);
+      return {
+        ...d, x: coords[0], y: coords[1]};
+    });
+
 
     // draw map 
     mapGroup.selectAll("path")
@@ -98,37 +100,39 @@ const createLegend = (colorScale) => {
       .attr("class", "neighbourhood")
       .attr("note", d => d.properties.neighbourhood)
       .style("stroke", "black")
-      .on("click", (event, d) => drawDistrictMap(event, d, geojson, listings, colorVar))
+      .on("click", (event, d) => drawDistrictMap(event, d, geojson, listings, listings, colorVar))
       .append("title")
       .text(d => `${d.properties.neighbourhood}`);
  // prepare listing coordinates for hexbin
-    const listing_coordinates = listings.map(d => {
-      const coords = projection([d.longitude, d.latitude]);
-      return  {x: coords[0], y: coords[1], value: d[colorVar]}
-    })
-    .filter(d => d.value !== 0); // filter out listings with price 0
-
+    
 
     /*var colorScale = d3.scaleQuantile()
     .domain(listing_coordinates.map(d => d[2]))
     .range(colors)
     */
-    drawHexMap(listing_coordinates);
+    const data = showListings
+      .map(d =>  ({id: d.id, x: d.x, y: d.y, value: d[colorVar]}))
+      .filter(d => d.value !== 0);
+
+    d3.selectAll("input[name='var1']").on("change", function(e) {
+        update();
+      });
+
+    drawHexMap(data);
 
       const update = () => {
         // Get the selected variable
-        const selectedVar = d3.select("#var1").property("value");
+        const selectedVar = d3.select("input[name='var1']:checked").property("value");
         console.log(selectedVar);
         // Update the map based on the selected variable
         // You can implement the logic to update the map here
-        const data = listings.map(d => { 
-          const coords = projection([d.longitude, d.latitude]);
-          return  {x: coords[0], y: coords[1], value: d[selectedVar]}
-        }).filter(d => d.value !== 0);
-        drawHexMap(data);
-        colorScale = getColorScale(listings, selectedVar);
+ 
+         colorScale = getColorScale(listings, selectedVar);
         createLegend(colorScale);
-        drawHistogram(listings.map(d => d[selectedVar]));
+        drawHexMap(showListings
+          .map(d =>  ({id: d.id, x: d.x, y: d.y, value: d[selectedVar]}))
+          .filter(d => d.value !== 0));
+       drawHistogram(showListings.map(d => d[selectedVar]));
       }
     };
 
@@ -154,15 +158,13 @@ const createLegend = (colorScale) => {
             .enter().append("path")
             .attr("transform", d => `translate(${d.x},${d.y})`)
             .attr("d", d => {  return hexbin.hexagon(sizeScale(d.length)); })
-            .attr("fill", function(d) {
+            .attr("fill", function(d) { 
               return colorScale(d3.median(d.map(e => e.value)));
-            });
-
-         
+            });        
       }
 
 
-  const drawDistrictMap = (event, district, geojson, listings, colorVar) => {
+  const drawDistrictMap = (event, district, geojson, listings, activelistings, colorVar) => {
     console.log(district);
     event.stopPropagation();
     projection.fitSize([width, height], district);
@@ -171,8 +173,8 @@ const createLegend = (colorScale) => {
       type: "FeatureCollection",
       features: [district]
     };
-    drawMap(district_geojson, listings.filter(d => d.neighbourhood === district.properties.neighbourhood), colorVar);
-    drawHistogram(listings.filter(d => d.neighbourhood === district.properties.neighbourhood).map(d => d.price));
+    drawMap(district_geojson, listings, district.properties.neighbourhood, colorVar);
+    drawHistogram(activelistings.filter(d => d.neighbourhood === district.properties.neighbourhood).map(d => d[colorVar]));
 
     // add back button
     map.append("text")
@@ -186,8 +188,8 @@ const createLegend = (colorScale) => {
       .text("[ BACK ]")
       .on("click", e => {
         e.stopPropagation();
-        drawMap(geojson, listings, colorVar);
-        drawHistogram(listings.map(d => d.price));
+        drawMap(geojson, listings, "city", colorVar);
+        drawHistogram(activelistings.map(d => d[colorVar]));
 
       });
   };
@@ -255,12 +257,14 @@ var histogram = d3.histogram()
     }))
   ]).then(([geojson, listings]) => {
     // print listing data
-    //console.log(listings);
+    console.log(listings.slice(0,100));
 
 
     colorScale = getColorScale(listings, "price");
     createLegend(colorScale);
-    drawMap(geojson, listings, "price");
+  
+
+    drawMap(geojson, listings, "city", "price");
     //createLegend(svg, getColorScale(listings, "price"), d3.extent(Array.from(listings.map(d => d["price"])).reverse()));
     drawHistogram(listings.map(d => d.price));
   });
