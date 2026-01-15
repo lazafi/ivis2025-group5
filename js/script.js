@@ -110,13 +110,8 @@ const createLegend = (colorScale) => {
     d3.selectAll("circle").remove();
     mapGroup.selectAll("path").remove();
 
-   projection.fitSize([width, height], geojson);
-    const showListings = listings.filter(d => d.neighbourhood === level || level === "city")
-    .map(d => {
-      const coords = projection([d.longitude, d.latitude]);
-      return {
-        ...d, x: coords[0], y: coords[1]};
-    });
+
+      projection.fitSize([width, height], geojson);
 
   drawTiles();
 
@@ -131,7 +126,7 @@ const createLegend = (colorScale) => {
       .style("stroke", "black")
       .style("fill", "white")
       .style("fill-opacity", 0.1)
-      .on("click", (event, d) => drawDistrictMap(event, d, geojson, listings, listings, colorVar))
+      .on("click", (event, d) => drawDistrictMap(event, d, geojson, listings, colorVar))
       .append("title")
       .text(d => `${d.properties.neighbourhood}`);
  // prepare listing coordinates for hexbin
@@ -141,6 +136,12 @@ const createLegend = (colorScale) => {
     .domain(listing_coordinates.map(d => d[2]))
     .range(colors)
     */
+    const showListings = listings.filter(d => d.neighbourhood === level || level === "city")
+    .map(d => {
+      const coords = projection([d.longitude, d.latitude]);
+      return {
+        ...d, x: coords[0], y: coords[1]};
+    });
     const data = showListings
       .map(d =>  ({id: d.id, x: d.x, y: d.y, value: d[colorVar]}))
       .filter(d => d.value !== 0);
@@ -195,7 +196,7 @@ const createLegend = (colorScale) => {
       }
 
 
-  const drawDistrictMap = (event, district, geojson, listings, activelistings, colorVar) => {
+  const drawDistrictMap = (event, district, geojson, listings, colorVar) => {
     console.log(district);
     event.stopPropagation();
     projection.fitSize([width, height], district);
@@ -205,7 +206,7 @@ const createLegend = (colorScale) => {
       features: [district]
     };
     drawMap(district_geojson, listings, district.properties.neighbourhood, colorVar);
-    drawHistogram(activelistings.filter(d => d.neighbourhood === district.properties.neighbourhood).map(d => d[colorVar]));
+    drawHistogram(listings.filter(d => d.neighbourhood === district.properties.neighbourhood).map(d => d[colorVar]));
 
     // add back button
     map.append("text")
@@ -220,7 +221,7 @@ const createLegend = (colorScale) => {
       .on("click", e => {
         e.stopPropagation();
         drawMap(geojson, listings, "city", colorVar);
-        drawHistogram(activelistings.map(d => d[colorVar]));
+        drawHistogram(listings.map(d => d[colorVar]));
 
       });
   };
