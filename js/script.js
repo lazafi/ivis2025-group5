@@ -24,31 +24,30 @@
   const projection = d3.geoMercator();
 
   const colors = ["#fff5eb","#fee8d3","#fdd8b3","#fdc28c","#fda762","#fb8d3d","#f2701d","#e25609","#c44103","#9f3303","#7f2704"]
+  
   var hexbin = d3.hexbin()
     .extent([[0, 0], [width, height]])
     .radius(10)
     .x(d => d.x)
     .y(d => d.y);
     
-  var listings;
+  //var listings;
   var colorScale;
 
   const getColorScale = (listings, colorVar) => {
       const values = listings.map(d => d[colorVar]);
+      console.log(values);
       return d3.scaleQuantile()
         .domain(values)
         .range(colors);
     }
-
-
-
 
 const createLegend = (colorScale) => {
               legendGroup.selectAll("*").remove();
               //const legend = svg.append("g").attr("class", "legend").attr("transform", "translate(20, 30)");
             const legendScale = d3.scaleLinear()
                .domain(d3.extent(colorScale.quantiles()))
-               .range(d3.extent(colorScale.quantiles()));
+               .range([0, colorScale.quantiles().length * 20]);
              console.log(colorScale.quantiles().length);
              console.log(d3.extent(colorScale.quantiles()));
               const legendAxis = d3.axisRight(legendScale)
@@ -60,7 +59,7 @@ const createLegend = (colorScale) => {
                 .tickFormat(d => Math.round(d));
               legendGroup.append("g")
                 .attr("class", "axis")
-                .attr("transform", "translate(20, -39)")
+                .attr("transform", "translate(20, 0)")
                 .call(legendAxis);
               legendGroup.append("g").selectAll("rect")
                 .data(colorScale.quantiles())
@@ -127,6 +126,9 @@ const createLegend = (colorScale) => {
           return  {x: coords[0], y: coords[1], value: d[selectedVar]}
         }).filter(d => d.value !== 0);
         drawHexMap(data);
+        colorScale = getColorScale(listings, selectedVar);
+        createLegend(colorScale);
+        drawHistogram(listings.map(d => d[selectedVar]));
       }
     };
 
@@ -156,7 +158,6 @@ const createLegend = (colorScale) => {
               return colorScale(d3.median(d.map(e => e.value)));
             });
 
-          createLegend(colorScale);
          
       }
 
@@ -202,7 +203,7 @@ const createLegend = (colorScale) => {
 
     var x = d3.scaleLinear()
       .domain([0, d3.max(data) ] )   
-      .range([0, w]);
+      .range([0, w ]);
   
       hist.append("g")
       .attr("transform", "translate(0," + h + ")")
@@ -246,31 +247,21 @@ var histogram = d3.histogram()
       latitude: +d.latitude,
       longitude: +d.longitude,
       availability_365: +d.availability_365,
-      price: +d.price
+      occupancy_rate: (1 - (+d.availability_365 / 365)) * 100,
+      price: +d.price,
+      number_of_reviews: +d.number_of_reviews,
+      reviews_per_month: +d.reviews_per_month,
+      minimum_nights: +d.minimum_nights
     }))
   ]).then(([geojson, listings]) => {
     // print listing data
     //console.log(listings);
 
-    //const geo = listing2geo(listings, geojson)
-    //console.log(geo);
 
-    // aggregate availability data grouped by neighbourhood
-    //const hoods = d3.rollup(listings, v => Math.round(d3.mean(v, d => d.availability_365) / 365 * 100), d => d.neighbourhood);
-    //const prices = listings.map(d => d.price);
-    //var colorScale = d3.scaleQuantile()
-    //.domain(prices)
-    //.range(["#fff5eb","#fee8d3","#fdd8b3","#fdc28c","#fda762","#fb8d3d","#f2701d","#e25609","#c44103","#9f3303","#7f2704"])
- 
-   /* const colorScale = d3.scaleSequential(d3.interpolateOranges)
-      .domain(d3.extent(Array.from(hoods.values())).reverse());
-    */
- 
     colorScale = getColorScale(listings, "price");
-    // call city draw function with the combined geojson data and aggregated availability data
+    createLegend(colorScale);
     drawMap(geojson, listings, "price");
     //createLegend(svg, getColorScale(listings, "price"), d3.extent(Array.from(listings.map(d => d["price"])).reverse()));
-
     drawHistogram(listings.map(d => d.price));
   });
 })();
