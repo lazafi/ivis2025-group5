@@ -1,0 +1,19 @@
+body {
+  font-family: 'Arial', sans-serif; 
+}
+.back {
+  fill: black;
+  cursor: pointer;
+}
+.responsive-svg-container {
+  margin-right: auto;
+  margin-left: auto;
+  width: 100%;
+  max-width: 800px;
+}
+
+.neighbourhood {
+  fill: white;
+  stroke: black;
+  stroke-width: 2px;
+}

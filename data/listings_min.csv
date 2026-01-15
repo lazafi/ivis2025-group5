@@ -1,0 +1,10 @@
+id,name,host_id,host_name,neighbourhood_group,neighbourhood,latitude,longitude,room_type,price,minimum_nights,number_of_reviews,last_review,reviews_per_month,calculated_host_listings_count,availability_365,number_of_reviews_ltm,license
+40625,"Near Palace Schönbrunn, Apt. 1",175131,Ingela,,Rudolfsheim-Fnfhaus,48.18434,16.32701,Entire home/apt,140,1,225,2025-08-20,1.22,14,137,8,
+51287,little studio- next to citycenter- wifi- nice area,166283,Hannes,,Leopoldstadt,48.21778,16.37847,Entire home/apt,71,30,383,2025-07-04,2.15,2,207,3,
+109679,Near Palace Schönbrunn - Apt. 4,175131,Ingela,,Rudolfsheim-Fnfhaus,48.18467,16.32795,Entire home/apt,66,1,152,2025-08-09,0.93,14,134,9,
+114505,"Near Palace Schönbrunn, Apt. 5",175131,Ingela,,Rudolfsheim-Fnfhaus,48.18445,16.32722,Entire home/apt,96,1,124,2022-12-30,0.71,14,100,0,
+131628,"Holiday Apartment ""Modern Vienna""",647465,Sylvia,,Ottakring,48.21543,16.30939,Entire home/apt,,7,0,,,2,0,0,
+138264,Apartment with roofterrace (#1),675182,Stephanie,,Hernals,48.22353,16.31773,Entire home/apt,151,1,6,2023-05-07,0.07,14,261,0,
+169672,In the Heart of Vienna - Naschmarkt,808772,Astrid,,Wieden,48.19527,16.36374,Private room,58,2,445,2025-09-10,2.59,1,255,20,
+169752,Viennaflat mini: Centrally located studio,809077,Martha,,Margareten,48.19469,16.35963,Entire home/apt,10000,1,112,2025-08-26,0.89,11,251,9,
+169852,Viennaflat classic: spacious flat in the center,809077,Martha,,Margareten,48.19469,16.35963,Entire home/apt,,1,92,2024-09-15,0.55,11,0,1,

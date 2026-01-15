@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Group Assignment 1 | AirBnB Vienna</title>
+	<link rel="stylesheet" type="text/css" href="./style.css">
+</head>
+<body>
+	<div id="options">
+		<label for="var1" style="margin-left:30px">Variable 1</label>
+		<select name="var1" id="var1">
+			<option value="price">Price in EUR</option>
+			<option value="availability_365">Percentage of availability</option>
+		</select>
+	</div>
+	<div id="map" class="responsive-svg-container"></div>
+	<div id="bar" class="responsive-svg-container"></div>
+	<script src="./js/d3.v7.js"></script>
+	<script src="https://d3js.org/d3-hexbin.v0.2.min.js"></script>
+	<script src="./js/script.js"></script>
+</body>
+</html>
