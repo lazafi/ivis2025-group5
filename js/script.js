@@ -6,6 +6,7 @@
   const map = d3.select("#map")
     .append("svg")
     .attr("viewBox", [0, 0, width, height]);
+  const tileGroup = map.append("g").attr("id", "tile-group");
   const mapGroup = map.append("g").attr("id", "map-group");
   const legendGroup = map.append("g").attr("id", "legend-group");
   const pointsGroup = map.append("g").attr("id", "points-group");
@@ -41,6 +42,33 @@
         .domain(values)
         .range(colors);
     }
+
+    const drawTiles = () => {
+      var tiles = d3.tile()
+        .size([width, height])
+        .scale(projection.scale() * 2 * Math.PI)
+        .translate(projection([0, 0]))();
+      
+        tileGroup.selectAll("image").remove();
+        tileGroup.selectAll("rect").remove();
+
+        tileGroup.selectAll("image")
+        .data(tiles)
+        .enter().append("image")
+          .attr("xlink:href", function(d) { return "http://" + "abc"[d[1] % 3] + ".tile.openstreetmap.org/" + d[2] + "/" + d[0] + "/" + d[1] + ".png"; })
+          .attr("x", function(d) { return (d[0] + tiles.translate[0]) * tiles.scale; })
+          .attr("y", function(d) { return (d[1] + tiles.translate[1]) * tiles.scale; })
+          .attr("width", tiles.scale)
+          .attr("height", tiles.scale); 
+
+      tileGroup.append("rect")
+      .attr("width", "100%")
+      .attr("height", "100%")
+      .style("fill", "white")
+      .style("opacity", 0.7);
+        return tiles;
+    }
+
 
 const createLegend = (colorScale) => {
               legendGroup.selectAll("*").remove();
@@ -82,7 +110,7 @@ const createLegend = (colorScale) => {
     d3.selectAll("circle").remove();
     mapGroup.selectAll("path").remove();
 
-    projection.fitSize([width, height], geojson);
+   projection.fitSize([width, height], geojson);
     const showListings = listings.filter(d => d.neighbourhood === level || level === "city")
     .map(d => {
       const coords = projection([d.longitude, d.latitude]);
@@ -90,6 +118,7 @@ const createLegend = (colorScale) => {
         ...d, x: coords[0], y: coords[1]};
     });
 
+  drawTiles();
 
     // draw map 
     mapGroup.selectAll("path")
@@ -100,6 +129,8 @@ const createLegend = (colorScale) => {
       .attr("class", "neighbourhood")
       .attr("note", d => d.properties.neighbourhood)
       .style("stroke", "black")
+      .style("fill", "white")
+      .style("fill-opacity", 0.1)
       .on("click", (event, d) => drawDistrictMap(event, d, geojson, listings, listings, colorVar))
       .append("title")
       .text(d => `${d.properties.neighbourhood}`);
@@ -259,6 +290,8 @@ var histogram = d3.histogram()
     // print listing data
     console.log(listings.slice(0,100));
 
+   // projection.fitSize([width, height], geojson);
+    //drawTiles();
 
     colorScale = getColorScale(listings, "price");
     createLegend(colorScale);
