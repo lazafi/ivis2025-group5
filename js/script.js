@@ -69,6 +69,7 @@
 
   const resetToCity = () => {
     if (!fullGeojson || !allListings.length) return;
+    d3.select("#neighborhood-select").property("value", "wien");
     drawMap(fullGeojson, allListings, "wien", currentMetric);
   };
 
@@ -276,11 +277,12 @@ const createLegend = (colorScale, label) => {
       .on("click", (event, d) => {
         event.stopPropagation();
         if (!geojson || currentLevel !== "wien") return;
-        const coords = projection.invert([d.x, d.y]);
+        const firstPoint = d[0];
+        const coords = projection.invert([firstPoint.x, firstPoint.y]);
         if (!coords) return;
         const target = geojson.features.find(feature => d3.geoContains(feature, coords));
         if (target) {
-          drawDistrictMap(event, target, geojson, listings, currentMetric);
+          drawDistrictMap(target.properties.neighbourhood, geojson, listings);
         }
       });
 
@@ -415,8 +417,10 @@ const createLegend = (colorScale, label) => {
   };
 
 const populateDropdown = (geojson) => {
+  console.log(geojson.features.map(d => decodeURI(d.properties.neighbourhood)));
   const selectDistrict = d3.select("#neighborhood-select");
       selectDistrict.selectAll("option")
+    //  .data(["wien"].concat(geojson.features.map(d => d.properties.neighbourhood.replace(/[\u00A0-\u9999<>\&]/g, i => '&#'+i.charCodeAt(0)+';'))))
         .data(["wien"].concat(geojson.features.map(d => d.properties.neighbourhood)))
         .enter()
         .append("option")
@@ -462,7 +466,8 @@ const populateDropdown = (geojson) => {
       price: +d.price,
       number_of_reviews: +d.number_of_reviews,
       reviews_per_month: +d.reviews_per_month,
-      minimum_nights: +d.minimum_nights
+      minimum_nights: +d.minimum_nights,
+      room_type: d.room_type,
     }))
   ]).then(([geojson, listings]) => {
     fullGeojson = geojson;
