@@ -303,32 +303,33 @@ const createLegend = (colorScale, label) => {
     };
     drawMap(districtGeojson, listings, district.properties.neighbourhood, colorVar);
 
-    // add back button
+    // add back button aligned to right
+    const backWidth = 88;
+    const backMargin = 16;
     const backGroup = map.append("g")
       .attr("id", "back")
       .attr("class", "back")
       .style("cursor", "pointer")
-      .attr("transform", "translate(16, 16)")
+      .attr("transform", `translate(${width - backMargin - backWidth}, ${backMargin})`)
       .on("click", e => {
-        e.stopPropagation();
-        resetToCity();
+      e.stopPropagation();
+      resetToCity();
       });
 
     backGroup.append("rect")
-      .attr("width", 88)
+      .attr("width", backWidth)
       .attr("height", 28)
       .attr("rx", 6)
       .attr("ry", 6);
 
     backGroup.append("text")
-      .attr("x", 44)
+      .attr("x", backWidth / 2)
       .attr("y", 14)
       .attr("dominant-baseline", "middle")
       .attr("alignment-baseline", "middle")
       .attr("text-anchor", "middle")
       .text("Back");
-  };
-
+    };
   const drawHistogram = (data, label, metricKey) => {
     const margins = {top: 20, right: 20, bottom: 60, left: 56};
     const w = width - margins.left - margins.right;
