@@ -1,5 +1,3 @@
-
-
 (() => {
   // define main elements
   const width = 600, height = 600;
@@ -65,13 +63,13 @@
   //var listings;
   var colorScale;
   var currentMetric = "price";
-  var currentLevel = "city";
+  var currentLevel = "wien";
   var fullGeojson;
   var allListings = [];
 
   const resetToCity = () => {
     if (!fullGeojson || !allListings.length) return;
-    drawMap(fullGeojson, allListings, "city", currentMetric);
+    drawMap(fullGeojson, allListings, "wien", currentMetric);
   };
 
   const animateViewChange = () => {
@@ -176,7 +174,7 @@ const createLegend = (colorScale, label) => {
   drawTiles();
 
     map.on("click", null).on("click", () => {
-      if (currentLevel !== "city") {
+      if (currentLevel !== "wien") {
         resetToCity();
       }
     });
@@ -277,7 +275,7 @@ const createLegend = (colorScale, label) => {
     const updatedHexes = hexEnter.merge(hexes)
       .on("click", (event, d) => {
         event.stopPropagation();
-        if (!geojson || currentLevel !== "city") return;
+        if (!geojson || currentLevel !== "wien") return;
         const coords = projection.invert([d.x, d.y]);
         if (!coords) return;
         const target = geojson.features.find(feature => d3.geoContains(feature, coords));
@@ -415,6 +413,38 @@ const createLegend = (colorScale, label) => {
       .attr("height", d => h - y(d.length));
   };
 
+const populateDropdown = (geojson) => {
+  const selectDistrict = d3.select("#neighborhood-select");
+      selectDistrict.selectAll("option")
+        .data(["wien"].concat(geojson.features.map(d => d.properties.neighbourhood)))
+        .enter()
+        .append("option")
+        .attr("value", d => d)
+        .text(d => d.charAt(0).toUpperCase() + d.slice(1));
+
+      d3.select("#neighborhood-select").on("change", function(e) {
+        e.stopPropagation();
+        const value = d3.select(this).property("value");
+        if (value === "wien") {
+          drawMap(geojson, allListings, "wien", colorVar);
+          drawHistogram(allListings.map(d => d[colorVar]));
+          return;
+        } else {
+          drawDistrictMap(value, geojson, allListings);
+        }
+      });
+    };
+
+    const prepareHexbinData = (listings) => {
+      return listings.filter(d => d.neighbourhood === currentLevel || currentLevel === "wien")
+        .map(d => {
+            const coords = projection([d.longitude, d.latitude]);
+            return {
+              ...d, x: coords[0], y: coords[1]};
+             })
+        .map(d =>  ({id: d.id, x: d.x, y: d.y, value: d[currentMetric]}))
+         .filter(d => d.value !== 0)
+    };
 
 
   // load data
@@ -436,6 +466,20 @@ const createLegend = (colorScale, label) => {
   ]).then(([geojson, listings]) => {
     fullGeojson = geojson;
     allListings = listings;
-    drawMap(fullGeojson, allListings, "city", "price");
+    drawMap(fullGeojson, allListings, "wien", "price");
+
+    // setup district dropdown
+    populateDropdown(fullGeojson);
+
+    // setup hexbin radius slider
+      d3.select("#binSlider").on("change", function(e) {
+         e.stopPropagation();
+         const value = d3.select(this).property("value");
+         hexbin.radius(+value);
+          const selectedVar = d3.select("input[name='var1']:checked").property("value");
+         drawHexMap(prepareHexbinData(allListings), fullGeojson, allListings, selectedVar);
+       });
+      
+     
   });
 })();
