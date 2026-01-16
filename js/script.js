@@ -37,7 +37,6 @@
 
   const getColorScale = (listings, colorVar) => {
       const values = listings.map(d => d[colorVar]);
-      console.log(values);
       return d3.scaleQuantile()
         .domain(values)
         .range(colors);
@@ -178,7 +177,6 @@ const createLegend = (colorScale) => {
 
      
     // print first 10 data points
-    console.log(data.slice(0,10));
         hexGroup.selectAll("path").remove();
         /*const colorScale = d3.scaleQuantile()
         .domain(data.map(d => d.value))
@@ -260,13 +258,13 @@ var histogram = d3.histogram()
   var bins = histogram(data);
 
   var y = d3.scaleLinear()
-      .range([h, 0])
-      .domain([0, d3.max(bins, function(d) { return d.length; })]);  
+      .domain([0, 0.1])
+      .range([h, 0]);
    
       hist.append("g")
       .call(d3.axisLeft(y));
 
-      hist.selectAll("rect")
+  /*    hist.selectAll("rect")
       .data(bins)
       .enter()
       .append("rect")
@@ -275,7 +273,40 @@ var histogram = d3.histogram()
         .attr("width", function(d) { return x(d.x1) - x(d.x0) -1 ; })
         .attr("height", function(d) { return h - y(d.length); })
         .style("fill", function(d) { return colorScale(d.x0); })
+  */
+
+  // Compute kernel density estimation
+  var kde = kernelDensityEstimator(kernelEpanechnikov(7), x.ticks(40))
+  var density =  kde( data )
+
+    console.log(density);
+    console.log(density.map(d => [x(d[0]), y(d[1])]) );
+
+  hist.append("g")
+    .attr("class", "mypath")
+      .datum(density)
+      .attr("stroke-width", 1)
+      .attr("stroke-linejoin", "round")
+      .attr("d",  d3.line()
+        .curve(d3.curveBasis)
+          .x(function(d) { return x(d[0]); })
+          .y(function(d) { return y(d[1]); })
+      );
+  
   };
+// Function to compute density
+function kernelDensityEstimator(kernel, X) {
+  return function(V) {
+    return X.map(function(x) {
+      return [x, d3.mean(V, function(v) { return kernel(x - v); })];
+    });
+  };
+}
+function kernelEpanechnikov(k) {
+  return function(v) {
+    return Math.abs(v /= k) <= 1 ? 0.75 * (1 - v * v) / k : 0;
+  };
+}
 
  const updateHexmap = (listings) => {
     // Get the selected variable
@@ -319,7 +350,6 @@ var histogram = d3.histogram()
     }))
   ]).then(([geojson, listings]) => {
     // print listing data
-    console.log(listings.slice(0,100));
 
    // projection.fitSize([width, height], geojson);
     //drawTiles();
@@ -353,7 +383,7 @@ var histogram = d3.histogram()
         }
       });
 
-       d3.select("#binSlider").on("change", function(e) {
+       d3.select("#binSlider").on("input", function(e) {
          e.stopPropagation();
          const value = d3.select(this).property("value");
          hexbin.radius(+value);

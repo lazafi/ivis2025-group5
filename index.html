@@ -7,34 +7,26 @@
 	<link rel="stylesheet" type="text/css" href="./style.css">
 </head>
 <body>
-	<div id="options">
+
+	<!-- Header -->
+<header>
+  <h1>AirBnB Vienna</h1>
+</header>
+
+	<div class="container">
+
+	<div class="side">
+		<div id="options>"
+		<!--dropdown-->
+		<label for="neighborhood-select">Select neighborhood:</label>
+		<select id="neighborhood-select"></select>
+		<br><br>
 		<!--slider-->
 		<label for="binSlider">Bin size</label>
 		<input id="binSlider" type="range" value="10" min="1" max="100" oninput="binText.value=binSlider.value" />
 		<input id="binText" type="number" value="10" min="1" max="100" oninput="binSlider.value=binText.value" disabled />
-		<br><br>
-		<!--dropdown-->
-		<label for="neighborhood-select">Select neighborhood:</label>
-		<select id="neighborhood-select">
-			<!--<option value="city">Entire City</option>
-			<option value="Alsergrund">Alsergrund</option>
-			<option value="Favoriten">Favoriten</option>
-			<option value="Leopoldstadt">Leopoldstadt</option>
-			<option value="Landstraße">Landstraße</option>
-			<option value="Wieden">Wieden</option>
-			<option value="Margareten">Margareten</option>
-			<option value="Mariahilf">Mariahilf</option>
-			<option value="Rudolfsheim-Fünfhaus">Rudolfsheim-Fünfhaus</option>
-			<option value="Ottakring">Ottakring</option>
-			<option value="Hernals">Hernals</option>
-			<option value="Josefstadt">Josefstadt</option>
-			<option value="Neubau">Neubau</option>
-			<option value="Brigittenau">Brigittenau</option>
-			<option value="Döbling">Döbling</option>
-			<option value="Penzing">Penzing</option>
-			<option value="Hietzing">Hietzing</option>
-			<option value="Liesing">Liesing</option>-->
-		</select>
+	
+
 		<br><br>
 		<!--radio buttons-->
 		<fieldset>
@@ -61,9 +53,12 @@
 			<label for="var1_minimum_nights">Minimum nights</label>
 		</div>
 		</fieldset>
+		</div>
+		<div id="bar" class="responsive-svg-container"></div>
 	</div>
-	<div id="map" class="responsive-svg-container"></div>
-	<div id="bar" class="responsive-svg-container"></div>
+	<div id="map" class="main"></div>
+	</div>
+
 	<script src="./js/d3.v7.js"></script>
 	<script src="https://d3js.org/d3-hexbin.v0.2.min.js"></script>
 	<script src="https://d3js.org/d3-tile.v0.0.min.js"></script> 

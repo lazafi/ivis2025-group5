@@ -1,16 +1,46 @@
 body {
   font-family: 'Arial', sans-serif; 
 }
+
+/* Header */
+header {
+  padding: 20px;
+  text-align: center;
+  background: #cbe4ca;
+  color: white;
+}
+
 .back {
   fill: black;
   cursor: pointer;
 }
-.responsive-svg-container {
+
+/* Column container */
+.container {  
+  display: flex;
+  /* flex-wrap: wrap; */
+}
+
+.side {
+  flex: 30%;
+  background-color: #c9e3c8;
+  padding: 20px;
+}
+
+/* Main column */
+.main {
+  flex: 70%;
+  background-color: white;
+  padding: 20px;
+}
+
+
+/*.responsive-svg-container {
   margin-right: auto;
   margin-left: auto;
   width: 100%;
   max-width: 800px;
-}
+}*/
 
 .neighbourhood {
   fill: white;
