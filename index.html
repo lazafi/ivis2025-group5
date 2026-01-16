@@ -3,62 +3,59 @@
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>Group Assignment 1 | AirBnB Vienna</title>
+	<title>Group Assignment 2 | Airbnb Vienna</title>
 	<link rel="stylesheet" type="text/css" href="./style.css">
 </head>
 <body>
-
-	<!-- Header -->
-<header>
-  <h1>AirBnB Vienna</h1>
-</header>
-
-	<div class="container">
-
-	<div class="side">
-		<div id="options>"
-		<!--dropdown-->
-		<label for="neighborhood-select">Select neighborhood:</label>
-		<select id="neighborhood-select"></select>
-		<br><br>
-		<!--slider-->
-		<label for="binSlider">Bin size</label>
-		<input id="binSlider" type="range" value="10" min="1" max="100" oninput="binText.value=binSlider.value" />
-		<input id="binText" type="number" value="10" min="1" max="100" oninput="binSlider.value=binText.value" disabled />
-	
-
-		<br><br>
-		<!--radio buttons-->
-		<fieldset>
-			<legend>Select variable to color by:</legend>
-			<label for="var1" style="margin-left:30px">Variable 1</label>
-		<div>
-			<input type="radio" name="var1" id="var1" value="price" checked>
-			<label for="var1">Price in EUR</label>
+	<header class="page-header">
+		<div class="header-inner">
+			<p class="eyebrow">Group Assignment 2</p>
+			<h1>Airbnb Vienna: Price, Demand, and Stay Patterns</h1>
+			<p class="subtitle">Explore listing intensity and distribution changes as you zoom into districts.</p>
 		</div>
-		<div>
-			<input type="radio" name="var1" id="var1_occupancy_rate" value="occupancy_rate">
-			<label for="var1_occupancy_rate">Occupancy rate (%)</label>
-		</div>
-		<div>
-			<input type="radio" name="var1" id="var1_number_of_reviews" value="number_of_reviews">
-			<label for="var1_number_of_reviews">Number of reviews</label>
-		</div>
-		<div>
-			<input type="radio" name="var1" id="var1_reviews_per_month" value="reviews_per_month">
-			<label for="var1_reviews_per_month">Reviews per month</label>
-		</div>
-		<div>
-			<input type="radio" name="var1" id="var1_minimum_nights" value="minimum_nights">
-			<label for="var1_minimum_nights">Minimum nights</label>
-		</div>
-		</fieldset>
-		</div>
-		<div id="bar" class="responsive-svg-container"></div>
-	</div>
-	<div id="map" class="main"></div>
-	</div>
-
+	</header>
+	<main class="dashboard">
+		<aside id="options" class="panel controls">
+			<fieldset>
+				<legend>Select metric</legend>
+				<label class="option">
+					<input type="radio" name="var1" value="price" checked>
+					<span>Price in EUR</span>
+				</label>
+				<label class="option">
+					<input type="radio" name="var1" value="occupancy_rate">
+					<span>Occupancy rate (%)</span>
+				</label>
+				<label class="option">
+					<input type="radio" name="var1" value="number_of_reviews">
+					<span>Number of reviews</span>
+				</label>
+				<label class="option">
+					<input type="radio" name="var1" value="reviews_per_month">
+					<span>Reviews per month</span>
+				</label>
+				<label class="option">
+					<input type="radio" name="var1" value="minimum_nights">
+					<span>Minimum nights</span>
+				</label>
+			</fieldset>
+		</aside>
+		<section class="panel map-panel">
+			<div class="panel-header">
+				<h2>City map</h2>
+				<p>Hexbins show listing intensity. Click a district to zoom.</p>
+			</div>
+			<div id="map" class="responsive-svg-container"></div>
+		</section>
+		<section class="panel hist-panel">
+			<div class="panel-header">
+				<h2>Distribution</h2>
+				<p>Histogram updates with the selected metric.</p>
+			</div>
+			<div id="bar" class="responsive-svg-container"></div>
+		</section>
+	</main>
+	<div id="tooltip" class="tooltip" role="status" aria-live="polite"></div>
 	<script src="./js/d3.v7.js"></script>
 	<script src="https://d3js.org/d3-hexbin.v0.2.min.js"></script>
 	<script src="https://d3js.org/d3-tile.v0.0.min.js"></script> 

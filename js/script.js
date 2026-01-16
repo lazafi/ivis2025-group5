@@ -11,6 +11,7 @@
   const legendGroup = map.append("g").attr("id", "legend-group");
   const pointsGroup = map.append("g").attr("id", "points-group");
   const hexGroup = map.append("g").attr("id", "hex-group");
+  const tooltip = d3.select("#tooltip");
 
   const hist = d3.select("#bar")
     .append("svg")
@@ -19,12 +20,41 @@
 
   // used for all animations
   const getTransition = () => d3.transition()
-    .duration(300)
-    .ease(d3.easeLinear);
+    .duration(450)
+    .ease(d3.easeCubicOut);
 
   const projection = d3.geoMercator();
 
-  const colors = ["#fff5eb","#fee8d3","#fdd8b3","#fdc28c","#fda762","#fb8d3d","#f2701d","#e25609","#c44103","#9f3303","#7f2704"]
+  const colors = ["#fff5eb", "#fee8d3", "#fdd8b3", "#fdc28c", "#fda762", "#fb8d3d", "#f2701d", "#e25609", "#c44103", "#9f3303", "#7f2704"];
+
+  const metricMeta = {
+    price: { label: "Price (EUR)", format: d3.format(",.0f"), suffix: " EUR" },
+    occupancy_rate: { label: "Occupancy rate (%)", format: d3.format(".1f"), suffix: "%" },
+    number_of_reviews: { label: "Number of reviews", format: d3.format(",.0f"), suffix: "" },
+    reviews_per_month: { label: "Reviews per month", format: d3.format(".2f"), suffix: "" },
+    minimum_nights: { label: "Minimum nights", format: d3.format(",.0f"), suffix: "" }
+  };
+
+  const formatMetricValue = (key, value) => {
+    const meta = metricMeta[key] || { format: d3.format(",.2f"), suffix: "" };
+    return `${meta.format(value)}${meta.suffix}`;
+  };
+
+  const showTooltip = (event, html) => {
+    tooltip.html(html).style("opacity", 1);
+    moveTooltip(event);
+  };
+
+  const moveTooltip = (event) => {
+    const offset = 16;
+    tooltip
+      .style("left", `${event.pageX + offset}px`)
+      .style("top", `${event.pageY + offset}px`);
+  };
+
+  const hideTooltip = () => {
+    tooltip.style("opacity", 0);
+  };
   
   var hexbin = d3.hexbin()
     .extent([[0, 0], [width, height]])
@@ -34,6 +64,30 @@
     
   //var listings;
   var colorScale;
+  var currentMetric = "price";
+  var currentLevel = "city";
+  var fullGeojson;
+  var allListings = [];
+
+  const resetToCity = () => {
+    if (!fullGeojson || !allListings.length) return;
+    drawMap(fullGeojson, allListings, "city", currentMetric);
+  };
+
+  const animateViewChange = () => {
+    const cx = width / 2;
+    const cy = height / 2;
+    const start = `translate(${cx},${cy}) scale(0.96) translate(${-cx},${-cy})`;
+    [mapGroup, hexGroup].forEach(group => {
+      group
+        .interrupt()
+        .attr("opacity", 0)
+        .attr("transform", start)
+        .transition(getTransition())
+        .attr("opacity", 1)
+        .attr("transform", "translate(0,0)");
+    });
+  };
 
   const getColorScale = (listings, colorVar) => {
       const values = listings.map(d => d[colorVar]);
@@ -42,7 +96,7 @@
         .range(colors);
     }
 
-    const drawTiles = () => {
+  const drawTiles = () => {
       var tiles = d3.tile()
         .size([width, height])
         .scale(projection.scale() * 2 * Math.PI)
@@ -54,7 +108,7 @@
         tileGroup.selectAll("image")
         .data(tiles)
         .enter().append("image")
-          .attr("xlink:href", function(d) { return "http://" + "abc"[d[1] % 3] + ".tile.openstreetmap.org/" + d[2] + "/" + d[0] + "/" + d[1] + ".png"; })
+          .attr("xlink:href", function(d) { return "https://" + "abc"[d[1] % 3] + ".tile.openstreetmap.org/" + d[2] + "/" + d[0] + "/" + d[1] + ".png"; })
           .attr("x", function(d) { return (d[0] + tiles.translate[0]) * tiles.scale; })
           .attr("y", function(d) { return (d[1] + tiles.translate[1]) * tiles.scale; })
           .attr("width", tiles.scale)
@@ -69,12 +123,15 @@
     }
 
 
-const createLegend = (colorScale) => {
+const createLegend = (colorScale, label) => {
+              const legendStep = 20;
+              const legendOffset = { x: 20, y: 30 };
               legendGroup.selectAll("*").remove();
+              legendGroup.attr("transform", `translate(${legendOffset.x}, ${legendOffset.y})`);
               //const legend = svg.append("g").attr("class", "legend").attr("transform", "translate(20, 30)");
             const legendScale = d3.scaleLinear()
                .domain(d3.extent(colorScale.quantiles()))
-               .range([0, colorScale.quantiles().length * 20]);
+               .range([0, colorScale.quantiles().length * legendStep]);
              //console.log(colorScale.quantiles().length);
              //console.log(d3.extent(colorScale.quantiles()));
               const legendAxis = d3.axisRight(legendScale)
@@ -92,14 +149,14 @@ const createLegend = (colorScale) => {
                 .data(colorScale.quantiles())
                 .enter().append("rect")
                 .attr("x", 0)
-                .attr("y", (d, i) => i * 20)
+                .attr("y", (d, i) => i * legendStep)
                 .attr("width", 20)
                 .attr("height", 20)
                 .attr("fill", d => colorScale(d));
               legendGroup.append("text")
                 .attr("x", 0)
                 .attr("y", -10)
-                .text("Price (EUR)");
+                .text(label);
             };
 ////////////////////////////////
   const drawMap = (geojson, listings, level, colorVar) => {
@@ -109,10 +166,20 @@ const createLegend = (colorScale) => {
     d3.selectAll("circle").remove();
     mapGroup.selectAll("path").remove();
 
+    const isZoomChange = currentLevel !== level;
+    currentMetric = colorVar;
+    currentLevel = level;
 
-      projection.fitSize([width, height], geojson);
+      const padding = 14;
+      projection.fitExtent([[padding, padding], [width - padding, height - padding]], geojson);
 
   drawTiles();
+
+    map.on("click", null).on("click", () => {
+      if (currentLevel !== "city") {
+        resetToCity();
+      }
+    });
 
     // draw map 
     mapGroup.selectAll("path")
@@ -145,58 +212,85 @@ const createLegend = (colorScale) => {
       return {
         ...d, x: coords[0], y: coords[1]};
     });
-    const data = showListings
-      .map(d =>  ({id: d.id, x: d.x, y: d.y, value: d[colorVar]}))
-      .filter(d => d.value !== 0);
-
-    d3.selectAll("input[name='var1']").on("change", function(e) {
-        update();
-      });
-
-
-    drawHexMap(data);
-
-      const update = () => {
-        // Get the selected variable
-        const selectedVar = d3.select("input[name='var1']:checked").property("value");
-        console.log(selectedVar);
-        // Update the map based on the selected variable
-        // You can implement the logic to update the map here
- 
-         colorScale = getColorScale(listings, selectedVar);
-        createLegend(colorScale);
-        drawHexMap(showListings
-          .map(d =>  ({id: d.id, x: d.x, y: d.y, value: d[selectedVar]}))
-          .filter(d => d.value !== 0));
-       drawHistogram(showListings.map(d => d[selectedVar]));
-      }
+    const renderMetric = (metricKey) => {
+      colorScale = getColorScale(listings, metricKey);
+      createLegend(colorScale, metricMeta[metricKey].label);
+      drawHexMap(showListings
+        .map(d =>  ({id: d.id, x: d.x, y: d.y, value: d[metricKey]}))
+        .filter(d => d.value !== 0),
+        geojson,
+        listings);
+      drawHistogram(showListings.map(d => d[metricKey]), metricMeta[metricKey].label, metricKey);
     };
 
+    renderMetric(colorVar);
 
-   const drawHexMap = (data) => {
+    if (isZoomChange) {
+      animateViewChange();
+    }
 
-     
-    // print first 10 data points
-        hexGroup.selectAll("path").remove();
-        /*const colorScale = d3.scaleQuantile()
-        .domain(data.map(d => d.value))
-        .range(colors);*/
-  
+    d3.selectAll("input[name='var1']")
+      .on("change", null)
+      .on("change", () => {
+        const selectedVar = d3.select("input[name='var1']:checked").property("value");
+        currentMetric = selectedVar;
+        renderMetric(selectedVar);
+      });
+  };
 
-        var bins = hexbin(data)
-        
-        var sizeScale = d3.scaleSqrt()
-          .domain([0, d3.max(bins, d => d.length)])
-          .range([2, hexbin.radius()]);
 
-        hexGroup.selectAll("path")
-            .data(bins.sort(function(a, b) { return b.length - a.length; }))
-            .enter().append("path")
-            .attr("transform", d => `translate(${d.x},${d.y})`)
-            .attr("d", d => {  return hexbin.hexagon(sizeScale(d.length)); })
-            .attr("fill", function(d) { 
-              return colorScale(d3.median(d.map(e => e.value)));
-            });        
+   const drawHexMap = (data, geojson, listings) => {
+    const bins = hexbin(data);
+    const t = getTransition();
+    const maxBinSize = d3.max(bins, d => d.length) || 1;
+    const sizeScale = d3.scaleSqrt()
+      .domain([0, maxBinSize])
+      .range([2, hexbin.radius()]);
+
+    const hexes = hexGroup.selectAll("path")
+      .data(bins.sort((a, b) => b.length - a.length), d => `${d.x}-${d.y}`);
+
+    hexes.exit()
+      .transition(t)
+      .attr("opacity", 0)
+      .remove();
+
+    const hexEnter = hexes.enter()
+      .append("path")
+      .attr("transform", d => `translate(${d.x},${d.y})`)
+      .attr("d", () => hexbin.hexagon(0))
+      .attr("fill", d => colorScale(d3.median(d, e => e.value)))
+      .attr("stroke", "rgba(21, 36, 34, 0.35)")
+      .attr("stroke-width", 0.6)
+      .attr("opacity", 0.9)
+      .on("mouseenter", (event, d) => {
+        const median = d3.median(d, e => e.value);
+        showTooltip(event, `
+          <div><strong>${metricMeta[currentMetric].label}</strong></div>
+          <div>Median: ${formatMetricValue(currentMetric, median)}</div>
+          <div>Listings: ${d.length}</div>
+        `);
+      })
+      .on("mousemove", moveTooltip)
+      .on("mouseleave", hideTooltip);
+
+    const updatedHexes = hexEnter.merge(hexes)
+      .on("click", (event, d) => {
+        event.stopPropagation();
+        if (!geojson || currentLevel !== "city") return;
+        const coords = projection.invert([d.x, d.y]);
+        if (!coords) return;
+        const target = geojson.features.find(feature => d3.geoContains(feature, coords));
+        if (target) {
+          drawDistrictMap(event, target, geojson, listings, currentMetric);
+        }
+      });
+
+    updatedHexes
+      .transition(t)
+      .attr("transform", d => `translate(${d.x},${d.y})`)
+      .attr("d", d => hexbin.hexagon(sizeScale(d.length)))
+      .attr("fill", d => colorScale(d3.median(d, e => e.value)));
       }
 
 
@@ -205,131 +299,122 @@ const createLegend = (colorScale) => {
     const district = geojson.features.find(d => d.properties.neighbourhood === districtName);
     console.log(district);
     projection.fitSize([width, height], district);
-    const t = getTransition();
-    district_geojson = {
+    const districtGeojson = {
       type: "FeatureCollection",
       features: [district]
     };
-    drawMap(district_geojson, listings, district.properties.neighbourhood, colorVar);
-    drawHistogram(listings.filter(d => d.neighbourhood === district.properties.neighbourhood).map(d => d[colorVar]));
+    drawMap(districtGeojson, listings, district.properties.neighbourhood, colorVar);
 
     // add back button
-    map.append("text")
+    const backGroup = map.append("g")
       .attr("id", "back")
       .attr("class", "back")
-      .attr("width", 50)
-      .attr("height", 30)
-      .attr("x", width - 100)
-      .attr("y", height - 50)
-      .append("tspan")
-      .text("[ BACK ]")
+      .style("cursor", "pointer")
+      .attr("transform", "translate(16, 16)")
       .on("click", e => {
         e.stopPropagation();
-        d3.select("#neighborhood-select").property("value", "wien")
-        drawMap(geojson, listings, "wien", colorVar);
-        drawHistogram(listings.map(d => d[colorVar]));
-
+        resetToCity();
       });
+
+    backGroup.append("rect")
+      .attr("width", 88)
+      .attr("height", 28)
+      .attr("rx", 6)
+      .attr("ry", 6);
+
+    backGroup.append("text")
+      .attr("x", 44)
+      .attr("y", 14)
+      .attr("dominant-baseline", "middle")
+      .attr("alignment-baseline", "middle")
+      .attr("text-anchor", "middle")
+      .text("Back");
   };
 
-  drawHistogram = (data) => {
-
-    // Set the dimensions and margins of the graph
-    const margins = {top: 10, right: 30, bottom: 80, left: 20};
-   const w = width - margins.left - margins.right, h = height - margins.top - margins.bottom;
-    //remove previous histogram
+  const drawHistogram = (data, label, metricKey) => {
+    const margins = {top: 20, right: 20, bottom: 60, left: 56};
+    const w = width - margins.left - margins.right;
+    const h = height - margins.top - margins.bottom;
     hist.selectAll("*").remove();
 
+    const chart = hist.append("g")
+      .attr("transform", `translate(${margins.left},${margins.top})`);
 
-    var x = d3.scaleLinear()
-      .domain([0, d3.max(data) ] )   
-      .range([0, w ]);
-  
-      hist.append("g")
-      .attr("transform", "translate(0," + h + ")")
-      .call(d3.axisBottom(x));
+    const maxValue = d3.max(data) || 0;
+    const x = d3.scaleLinear()
+      .domain([0, maxValue])
+      .nice()
+      .range([0, w]);
 
-var histogram = d3.histogram()
-      //.value(data)   // I need to give the vector of value
-      .domain(x.domain())  // then the domain of the graphic
-      .thresholds(x.ticks(10)); // then the numbers of bins
+    const bins = d3.bin()
+      .domain(x.domain())
+      .thresholds(x.ticks(12))(data);
 
-  // And apply this function to data to get the bins
-  var bins = histogram(data);
-
-  var y = d3.scaleLinear()
-      .domain([0, 0.1])
+    const y = d3.scaleLinear()
+      .domain([0, d3.max(bins, d => d.length) || 1])
+      .nice()
       .range([h, 0]);
-   
-      hist.append("g")
-      .call(d3.axisLeft(y));
 
-  /*    hist.selectAll("rect")
-      .data(bins)
+    const xAxis = chart.append("g")
+      .attr("transform", `translate(0,${h})`)
+      .call(d3.axisBottom(x).ticks(6));
+
+    xAxis.selectAll("text")
+      .attr("dy", "0.75em");
+
+    chart.append("g")
+      .call(d3.axisLeft(y).ticks(5));
+
+    chart.append("text")
+      .attr("x", 0)
+      .attr("y", -6)
+      .attr("fill", "#51605c")
+      .attr("font-size", "0.85rem")
+      .text(label);
+
+    chart.append("text")
+      .attr("x", w / 2)
+      .attr("y", h + 44)
+      .attr("text-anchor", "middle")
+      .attr("fill", "#51605c")
+      .attr("font-size", "0.8rem")
+      .text("Value range");
+
+    chart.append("text")
+      .attr("transform", `translate(${-44},${h / 2}) rotate(-90)`)
+      .attr("text-anchor", "middle")
+      .attr("fill", "#51605c")
+      .attr("font-size", "0.8rem")
+      .text("Listings");
+
+    const t = getTransition();
+
+    chart.append("g")
+      .selectAll("rect")
+      .data(bins, d => d.x0)
       .enter()
       .append("rect")
-        .attr("x", 1)
-        .attr("transform", function(d) { return "translate(" + x(d.x0) + "," + y(d.length) + ")"; })
-        .attr("width", function(d) { return x(d.x1) - x(d.x0) -1 ; })
-        .attr("height", function(d) { return h - y(d.length); })
-        .style("fill", function(d) { return colorScale(d.x0); })
-  */
-
-  // Compute kernel density estimation
-  var kde = kernelDensityEstimator(kernelEpanechnikov(7), x.ticks(40))
-  var density =  kde( data )
-
-    console.log(density);
-    console.log(density.map(d => [x(d[0]), y(d[1])]) );
-
-  hist.append("g")
-    .attr("class", "mypath")
-      .datum(density)
-      .attr("stroke-width", 1)
-      .attr("stroke-linejoin", "round")
-      .attr("d",  d3.line()
-        .curve(d3.curveBasis)
-          .x(function(d) { return x(d[0]); })
-          .y(function(d) { return y(d[1]); })
-      );
-  
+      .attr("x", d => x(d.x0) + 1)
+      .attr("width", d => Math.max(0, x(d.x1) - x(d.x0) - 2))
+      .attr("y", h)
+      .attr("height", 0)
+      .attr("rx", 2)
+      .attr("fill", d => colorScale((d.x0 + d.x1) / 2))
+      .on("mouseenter", (event, d) => {
+        const range = `${formatMetricValue(metricKey, d.x0)} - ${formatMetricValue(metricKey, d.x1)}`;
+        showTooltip(event, `
+          <div><strong>${label}</strong></div>
+          <div>Range: ${range}</div>
+          <div>Listings: ${d.length}</div>
+        `);
+      })
+      .on("mousemove", moveTooltip)
+      .on("mouseleave", hideTooltip)
+      .transition(t)
+      .attr("y", d => y(d.length))
+      .attr("height", d => h - y(d.length));
   };
-// Function to compute density
-function kernelDensityEstimator(kernel, X) {
-  return function(V) {
-    return X.map(function(x) {
-      return [x, d3.mean(V, function(v) { return kernel(x - v); })];
-    });
-  };
-}
-function kernelEpanechnikov(k) {
-  return function(v) {
-    return Math.abs(v /= k) <= 1 ? 0.75 * (1 - v * v) / k : 0;
-  };
-}
 
- const updateHexmap = (listings) => {
-    // Get the selected variable
-    const selectedVar = d3.select("input[name='var1']:checked").property("value");
-    console.log(selectedVar);
-
-    const selectedDistrict = d3.select("#neighborhood-select").property("value");
-    const showListings = listings.filter(d => d.neighbourhood === selectedDistrict || selectedDistrict === "wien")
-    .map(d => {
-      const coords = projection([d.longitude, d.latitude]);
-      return {
-        ...d, x: coords[0], y: coords[1]};
-    });
-    // Update the map based on the selected variable
-    // You can implement the logic to update the map here
-
-    colorScale = getColorScale(listings, selectedVar);
-    createLegend(colorScale);
-    drawHexMap(showListings
-      .map(d =>  ({id: d.id, x: d.x, y: d.y, value: d[selectedVar]}))
-      .filter(d => d.value !== 0));
-    drawHistogram(showListings.map(d => d[selectedVar]));
-  }
 
 
   // load data
@@ -349,46 +434,8 @@ function kernelEpanechnikov(k) {
       minimum_nights: +d.minimum_nights
     }))
   ]).then(([geojson, listings]) => {
-    // print listing data
-
-   // projection.fitSize([width, height], geojson);
-    //drawTiles();
-
-    colorScale = getColorScale(listings, "price");
-    createLegend(colorScale);
-
-    drawMap(geojson, listings, "wien", "price");
-    //createLegend(svg, getColorScale(listings, "price"), d3.extent(Array.from(listings.map(d => d["price"])).reverse()));
-    drawHistogram(listings.map(d => d.price));
-
-
-      const selectDistrict = d3.select("#neighborhood-select") 
-      // populate dropdown
-      selectDistrict.selectAll("option")
-        .data(["wien"].concat(geojson.features.map(d => d.properties.neighbourhood)))
-        .enter()
-        .append("option")
-        .attr("value", d => d)
-        .text(d => d.charAt(0).toUpperCase() + d.slice(1));
-
-      d3.select("#neighborhood-select").on("change", function(e) {
-        e.stopPropagation();
-        const value = d3.select(this).property("value");
-        if (value === "wien") {
-          drawMap(geojson, listings, "wien", colorVar);
-          drawHistogram(listings.map(d => d[colorVar]));
-          return;
-        } else {
-          drawDistrictMap(value, geojson, listings);
-        }
-      });
-
-       d3.select("#binSlider").on("input", function(e) {
-         e.stopPropagation();
-         const value = d3.select(this).property("value");
-         hexbin.radius(+value);
-         updateHexmap(listings);
-       });
-      })();
+    fullGeojson = geojson;
+    allListings = listings;
+    drawMap(fullGeojson, allListings, "city", "price");
+  });
 })();
-
