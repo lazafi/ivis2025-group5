@@ -297,7 +297,6 @@ const createLegend = (colorScale, label) => {
   const drawDistrictMap = (districtName, geojson, listings) => {
     colorVar = d3.select("input[name='var1']:checked").property("value")
     const district = geojson.features.find(d => d.properties.neighbourhood === districtName);
-    console.log(district);
     projection.fitSize([width, height], district);
     const districtGeojson = {
       type: "FeatureCollection",
@@ -417,7 +416,6 @@ const createLegend = (colorScale, label) => {
   };
 
 const populateDropdown = (geojson) => {
-  console.log(geojson.features.map(d => decodeURI(d.properties.neighbourhood)));
   const selectDistrict = d3.select("#neighborhood-select");
       selectDistrict.selectAll("option")
     //  .data(["wien"].concat(geojson.features.map(d => d.properties.neighbourhood.replace(/[\u00A0-\u9999<>\&]/g, i => '&#'+i.charCodeAt(0)+';'))))
