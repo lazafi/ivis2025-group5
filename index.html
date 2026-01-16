@@ -8,6 +8,35 @@
 </head>
 <body>
 	<div id="options">
+		<!--slider-->
+		<label for="binSlider">Bin size</label>
+		<input id="binSlider" type="range" value="10" min="1" max="100" oninput="binText.value=binSlider.value" />
+		<input id="binText" type="number" value="10" min="1" max="100" oninput="binSlider.value=binText.value" disabled />
+		<br><br>
+		<!--dropdown-->
+		<label for="neighborhood-select">Select neighborhood:</label>
+		<select id="neighborhood-select">
+			<!--<option value="city">Entire City</option>
+			<option value="Alsergrund">Alsergrund</option>
+			<option value="Favoriten">Favoriten</option>
+			<option value="Leopoldstadt">Leopoldstadt</option>
+			<option value="Landstraße">Landstraße</option>
+			<option value="Wieden">Wieden</option>
+			<option value="Margareten">Margareten</option>
+			<option value="Mariahilf">Mariahilf</option>
+			<option value="Rudolfsheim-Fünfhaus">Rudolfsheim-Fünfhaus</option>
+			<option value="Ottakring">Ottakring</option>
+			<option value="Hernals">Hernals</option>
+			<option value="Josefstadt">Josefstadt</option>
+			<option value="Neubau">Neubau</option>
+			<option value="Brigittenau">Brigittenau</option>
+			<option value="Döbling">Döbling</option>
+			<option value="Penzing">Penzing</option>
+			<option value="Hietzing">Hietzing</option>
+			<option value="Liesing">Liesing</option>-->
+		</select>
+		<br><br>
+		<!--radio buttons-->
 		<fieldset>
 			<legend>Select variable to color by:</legend>
 			<label for="var1" style="margin-left:30px">Variable 1</label>

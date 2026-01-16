@@ -126,7 +126,11 @@ const createLegend = (colorScale) => {
       .style("stroke", "black")
       .style("fill", "white")
       .style("fill-opacity", 0.1)
-      .on("click", (event, d) => drawDistrictMap(event, d, geojson, listings, colorVar))
+      .on("click", (event, d) => {
+        event.stopPropagation();
+        const selected = d3.select("#neighborhood-select").property("value", d.properties.neighbourhood).selectAll("option:checked").property("value");
+        drawDistrictMap(d.properties.neighbourhood, geojson, listings);
+      })
       .append("title")
       .text(d => `${d.properties.neighbourhood}`);
  // prepare listing coordinates for hexbin
@@ -136,7 +140,7 @@ const createLegend = (colorScale) => {
     .domain(listing_coordinates.map(d => d[2]))
     .range(colors)
     */
-    const showListings = listings.filter(d => d.neighbourhood === level || level === "city")
+    const showListings = listings.filter(d => d.neighbourhood === level || level === "wien")
     .map(d => {
       const coords = projection([d.longitude, d.latitude]);
       return {
@@ -149,6 +153,7 @@ const createLegend = (colorScale) => {
     d3.selectAll("input[name='var1']").on("change", function(e) {
         update();
       });
+
 
     drawHexMap(data);
 
@@ -180,7 +185,8 @@ const createLegend = (colorScale) => {
         .range(colors);*/
   
 
-        var bins = hexbin(data);
+        var bins = hexbin(data)
+        
         var sizeScale = d3.scaleSqrt()
           .domain([0, d3.max(bins, d => d.length)])
           .range([2, hexbin.radius()]);
@@ -196,9 +202,10 @@ const createLegend = (colorScale) => {
       }
 
 
-  const drawDistrictMap = (event, district, geojson, listings, colorVar) => {
+  const drawDistrictMap = (districtName, geojson, listings) => {
+    colorVar = d3.select("input[name='var1']:checked").property("value")
+    const district = geojson.features.find(d => d.properties.neighbourhood === districtName);
     console.log(district);
-    event.stopPropagation();
     projection.fitSize([width, height], district);
     const t = getTransition();
     district_geojson = {
@@ -220,7 +227,8 @@ const createLegend = (colorScale) => {
       .text("[ BACK ]")
       .on("click", e => {
         e.stopPropagation();
-        drawMap(geojson, listings, "city", colorVar);
+        d3.select("#neighborhood-select").property("value", "wien")
+        drawMap(geojson, listings, "wien", colorVar);
         drawHistogram(listings.map(d => d[colorVar]));
 
       });
@@ -269,6 +277,28 @@ var histogram = d3.histogram()
         .style("fill", function(d) { return colorScale(d.x0); })
   };
 
+ const updateHexmap = (listings) => {
+    // Get the selected variable
+    const selectedVar = d3.select("input[name='var1']:checked").property("value");
+    console.log(selectedVar);
+
+    const selectedDistrict = d3.select("#neighborhood-select").property("value");
+    const showListings = listings.filter(d => d.neighbourhood === selectedDistrict || selectedDistrict === "wien")
+    .map(d => {
+      const coords = projection([d.longitude, d.latitude]);
+      return {
+        ...d, x: coords[0], y: coords[1]};
+    });
+    // Update the map based on the selected variable
+    // You can implement the logic to update the map here
+
+    colorScale = getColorScale(listings, selectedVar);
+    createLegend(colorScale);
+    drawHexMap(showListings
+      .map(d =>  ({id: d.id, x: d.x, y: d.y, value: d[selectedVar]}))
+      .filter(d => d.value !== 0));
+    drawHistogram(showListings.map(d => d[selectedVar]));
+  }
 
 
   // load data
@@ -296,11 +326,39 @@ var histogram = d3.histogram()
 
     colorScale = getColorScale(listings, "price");
     createLegend(colorScale);
-  
 
-    drawMap(geojson, listings, "city", "price");
+    drawMap(geojson, listings, "wien", "price");
     //createLegend(svg, getColorScale(listings, "price"), d3.extent(Array.from(listings.map(d => d["price"])).reverse()));
     drawHistogram(listings.map(d => d.price));
-  });
+
+
+      const selectDistrict = d3.select("#neighborhood-select") 
+      // populate dropdown
+      selectDistrict.selectAll("option")
+        .data(["wien"].concat(geojson.features.map(d => d.properties.neighbourhood)))
+        .enter()
+        .append("option")
+        .attr("value", d => d)
+        .text(d => d.charAt(0).toUpperCase() + d.slice(1));
+
+      d3.select("#neighborhood-select").on("change", function(e) {
+        e.stopPropagation();
+        const value = d3.select(this).property("value");
+        if (value === "wien") {
+          drawMap(geojson, listings, "wien", colorVar);
+          drawHistogram(listings.map(d => d[colorVar]));
+          return;
+        } else {
+          drawDistrictMap(value, geojson, listings);
+        }
+      });
+
+       d3.select("#binSlider").on("change", function(e) {
+         e.stopPropagation();
+         const value = d3.select(this).property("value");
+         hexbin.radius(+value);
+         updateHexmap(listings);
+       });
+      })();
 })();
 
